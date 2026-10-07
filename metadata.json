@@ -1,0 +1,6 @@
+{
+  "name": "Bangladesh GK Interactive Map",
+  "description": "Interactive OpenStreetMap of 64 districts and general knowledge points of Bangladesh for BCS and Medical admission preparation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
