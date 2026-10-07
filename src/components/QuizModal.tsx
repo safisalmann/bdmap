@@ -68,9 +68,9 @@ export const QuizModal: React.FC<QuizModalProps> = ({
               <Award className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-white">বিসিএস ও মেডিকেল ভর্তি প্রস্তুতি কুইজ</h3>
+              <h3 className="font-bold text-lg text-white">বাংলাদেশ সাধারণ জ্ঞান প্রস্তুতি কুইজ</h3>
               <p className="text-xs text-slate-400">
-                বাংলাদেশ বিষয়াবলীর বিগত বছরের আসল প্রশ্ন পরীক্ষা
+                বাংলাদেশ বিষয়াবলীর গুরুত্বপূর্ণ প্রশ্ন ও উত্তর অনুশীলন
               </p>
             </div>
           </div>

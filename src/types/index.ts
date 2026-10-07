@@ -92,7 +92,20 @@ export interface LandmarkPOI {
     | 'liberation_war' 
     | 'heritage' 
     | 'port_airport' 
-    | 'agriculture_park';
+    | 'agriculture_park'
+    | 'education_research'
+    | 'border_geo'
+    | 'mountain'
+    | 'factory'
+    | 'power_plant'
+    | 'bridge'
+    | 'river_confluence'
+    | 'river'
+    | 'medicine_park'
+    | 'beach_sea';
+  group?: 1 | 2 | 3 | 4;
+  groupTitle?: string;
+  spotNumber?: number;
   lat: number;
   lng: number;
   badgeBn: string;

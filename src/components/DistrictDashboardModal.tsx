@@ -153,7 +153,7 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>বিসিএস/মেডিকেল প্রশ্ন ({district.bcsQuestions.length})</span>
+            <span>জিকে প্রশ্নোত্তর ({district.bcsQuestions.length})</span>
           </button>
         </div>
 
@@ -451,13 +451,13 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
             </div>
           )}
 
-          {/* TAB 5: BCS & MEDICAL QUESTIONS */}
+          {/* TAB 5: GENERAL KNOWLEDGE QUESTIONS */}
           {activeTab === 'questions' && (
             <div className="space-y-4 animate-fadeIn">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-purple-400 font-bold">
                   <BookOpen className="w-5 h-5" />
-                  <h3>বিসিএস ও মেডিকেল ভর্তি পরীক্ষার বিগত প্রশ্ন</h3>
+                  <h3>সাধারণ জ্ঞান ও প্রতিযোগিতামূলক পরীক্ষার গুরুত্বপূর্ণ প্রশ্ন</h3>
                 </div>
                 <span className="text-xs text-slate-400">
                   ক্লিক করে উত্তর ও ব্যাখ্যা দেখুন
