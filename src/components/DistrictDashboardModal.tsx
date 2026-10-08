@@ -1,32 +1,71 @@
 import React, { useState } from 'react';
 import { 
-  X, MapPin, Award, BookOpen, Layers, Shield, 
-  Trees, Factory, Landmark, Anchor, Stethoscope, 
-  CheckCircle2, ChevronRight, HelpCircle, ExternalLink,
-  Sparkles
+  X, MapPin, Award, BookOpen, Shield, 
+  Trees, Factory, Landmark, Stethoscope, 
+  CheckCircle2, HelpCircle, Sparkles, Building2
 } from 'lucide-react';
 import { DistrictGK } from '../types';
 import { DIVISIONS } from '../data/divisions';
+import { DISTRICT_SPECIAL_FACTS } from '../data/districtSpecialFacts';
 
 interface DistrictDashboardModalProps {
   district: DistrictGK | null;
   onClose: () => void;
 }
 
+// Convert all Bengali digits and months to English
+function toEnDatesAndDigits(val: string | number | undefined | null): string {
+  if (val === undefined || val === null) return '';
+  let str = String(val);
+  const bnToEn: Record<string, string> = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+  };
+  str = str.replace(/[০-৯]/g, (char) => bnToEn[char] || char);
+
+  const months: Record<string, string> = {
+    'জানুয়ারি': 'January',
+    'ফেব্রুয়ারি': 'February',
+    'মার্চ': 'March',
+    'এপ্রিল': 'April',
+    'মে': 'May',
+    'জুন': 'June',
+    'জুলাই': 'July',
+    'আগস্ট': 'August',
+    'সেপ্টেম্বর': 'September',
+    'অক্টোবর': 'October',
+    'নভেম্বর': 'November',
+    'ডিসেম্বর': 'December'
+  };
+
+  for (const [bnM, enM] of Object.entries(months)) {
+    str = str.split(bnM).join(enM);
+  }
+
+  return str;
+}
+
+const toEnDigits = toEnDatesAndDigits;
+
 export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
   district,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'war' | 'infra' | 'heritage' | 'questions'>('overview');
+  // Only two tabs: Information and BCS/Medical questions
+  const [activeTab, setActiveTab] = useState<'information' | 'questions'>('information');
   const [revealedQuestions, setRevealedQuestions] = useState<Record<number, boolean>>({});
 
   if (!district) return null;
 
   const divInfo = DIVISIONS[district.divisionId];
+  const specialMeta = DISTRICT_SPECIAL_FACTS[district.id] || DISTRICT_SPECIAL_FACTS[district.adm2En.toLowerCase()];
 
   const toggleQuestion = (idx: number) => {
     setRevealedQuestions(prev => ({ ...prev, [idx]: !prev[idx] }));
   };
+
+  // Check if district has any chhitmahal (only show if count > 0)
+  const hasChhitmahal = district.chhitmahal && district.chhitmahal.count > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
@@ -34,16 +73,16 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
         className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
+        {/* Modal Header without axis position and total area */}
         <div 
           className="relative p-5 sm:p-6 border-b border-slate-800 flex items-start justify-between gap-4"
           style={{
-            background: `linear-gradient(135deg, ${divInfo.color}15 0%, rgba(15, 23, 42, 0.95) 100%)`
+            background: `linear-gradient(135deg, ${divInfo.color}18 0%, rgba(15, 23, 42, 0.96) 100%)`
           }}
         >
           <div className="flex items-start gap-4">
             <div 
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg border"
+              className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg border flex-shrink-0"
               style={{
                 backgroundColor: `${divInfo.color}25`,
                 borderColor: `${divInfo.color}50`,
@@ -53,7 +92,7 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
               {district.nameBn.slice(0, 2)}
             </div>
             <div>
-              <div className="flex flex-wrap items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                   {district.nameBn} জেলা
                 </h2>
@@ -70,110 +109,128 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
                 >
                   {district.divisionBn} বিভাগ
                 </span>
-                {district.chhitmahal.count > 0 && (
+                {specialMeta?.parliamentSeats && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                    <Building2 className="w-3 h-3" />
+                    <span>সংসদীয় আসন: {toEnDigits(specialMeta.parliamentSeats)}টি</span>
+                  </span>
+                )}
+                {hasChhitmahal && (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                    🧩 {district.chhitmahal.count}টি ছিটমহল
+                    🧩 {toEnDigits(district.chhitmahal.count)}টি ছিটমহল
                   </span>
                 )}
               </div>
-              <p className="text-xs sm:text-sm text-slate-300 line-clamp-2">
-                {district.speciality}
+
+              {/* Speciality text from preview */}
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
+                {toEnDigits(district.speciality)}
               </p>
-              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-400 font-mono">
-                <span>📐 আয়তন: <strong className="text-slate-200">{district.areaKm2.toLocaleString('bn-BD')}</strong> বর্গ কিমি</span>
-                <span>•</span>
-                <span>🧭 স্থানাঙ্ক: {district.lat.toFixed(3)}°N, {district.lng.toFixed(3)}°E</span>
-              </div>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer flex-shrink-0"
+            title="বন্ধ করুন"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center px-4 bg-slate-950/80 border-b border-slate-800 overflow-x-auto scrollbar-none text-xs sm:text-sm">
+        {/* Tab Navigation: Exactly 2 tabs (Information & BCS/Medical questions) */}
+        <div className="flex items-center px-4 sm:px-6 bg-slate-950/90 border-b border-slate-800 gap-2">
           <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-3 py-3 font-medium border-b-2 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
-              activeTab === 'overview'
-                ? 'border-emerald-400 text-emerald-400 font-bold'
+            onClick={() => setActiveTab('information')}
+            className={`px-4 py-3 font-bold border-b-2 flex items-center gap-2 transition cursor-pointer text-sm ${
+              activeTab === 'information'
+                ? 'border-emerald-400 text-emerald-400 font-extrabold shadow-sm'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>📌 মূল পরিচিতি ও কৃষি</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('war')}
-            className={`px-3 py-3 font-medium border-b-2 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
-              activeTab === 'war'
-                ? 'border-rose-400 text-rose-400 font-bold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Shield className="w-4 h-4" />
-            <span>মুক্তিযুদ্ধ ও বীরশ্রেষ্ঠ</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('infra')}
-            className={`px-3 py-3 font-medium border-b-2 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
-              activeTab === 'infra'
-                ? 'border-cyan-400 text-cyan-400 font-bold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Factory className="w-4 h-4" />
-            <span>মেগা অবকাঠামো ও শিল্প</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('heritage')}
-            className={`px-3 py-3 font-medium border-b-2 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
-              activeTab === 'heritage'
-                ? 'border-amber-400 text-amber-400 font-bold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Landmark className="w-4 h-4" />
-            <span>ঐতিহ্য ও নদ-নদী</span>
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span>Information</span>
           </button>
 
           <button
             onClick={() => setActiveTab('questions')}
-            className={`px-3 py-3 font-medium border-b-2 flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
+            className={`px-4 py-3 font-bold border-b-2 flex items-center gap-2 transition cursor-pointer text-sm ${
               activeTab === 'questions'
-                ? 'border-purple-400 text-purple-400 font-bold'
+                ? 'border-purple-400 text-purple-400 font-extrabold shadow-sm'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
-            <span>জিকে প্রশ্নোত্তর ({district.bcsQuestions.length})</span>
+            <BookOpen className="w-4 h-4 text-purple-400" />
+            <span>BCS/Medical questions ({toEnDigits(district.bcsQuestions.length)})</span>
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          {/* TAB 1: OVERVIEW & AGRICULTURE */}
-          {activeTab === 'overview' && (
-            <div className="space-y-5 animate-fadeIn">
-              {/* Old Names & Geographical Nicknames */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          {/* TAB 1: ALL INFORMATION MERGED IN ONE SECTION */}
+          {activeTab === 'information' && (
+            <div className="space-y-6 animate-fadeIn">
+              {/* 0. DISTRICT OVERVIEW & PREVIEW HIGHLIGHTS (Merged into Information) */}
+              <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-lg">
+                <div className="flex items-center gap-2 text-emerald-400 font-bold mb-2">
+                  <span className="text-base">📌</span>
+                  <h3 className="text-sm sm:text-base">জেলা পরিচিতি ও মূল সাধারণ জ্ঞান (Overview)</h3>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
+                  {toEnDatesAndDigits(district.speciality)}
+                </p>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-3 border-t border-slate-700/60">
+                  <div className="flex items-center gap-2 text-slate-300">
+                    <span className="text-emerald-400 font-semibold">🌾 শীর্ষ কৃষি:</span>
+                    <span className="font-medium text-white">{toEnDatesAndDigits(district.agricultureImpact.topCrop)}</span>
+                    {district.agricultureImpact.giProduct && (
+                      <span className="text-amber-300 font-bold">★ জিআই: {toEnDatesAndDigits(district.agricultureImpact.giProduct)}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-300">
+                    <span className="text-cyan-400 font-semibold">🏭 প্রধান স্থাপনা:</span>
+                    <span className="font-medium text-white truncate">{toEnDatesAndDigits(district.infrastructure[0]?.title || district.heritageAndArchaeology[0]?.name || 'তথ্যসমৃদ্ধ অঞ্চল')}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 1. SPECIAL INFORMATION & UNIQUE GEOGRAPHICAL HIGHLIGHTS */}
+              {specialMeta?.specialInformation && specialMeta.specialInformation.length > 0 && (
+                <div className="bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-4 sm:p-5 shadow-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-sm sm:text-base">
+                      <Sparkles className="w-5 h-5 text-amber-400" />
+                      <h3>বিশেষ তথ্য ও ভৌগোলিক রেকর্ড (Special Information)</h3>
+                    </div>
+                    {specialMeta.parliamentSeats && (
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 font-mono">
+                        সংসদীয় আসন: {toEnDatesAndDigits(specialMeta.parliamentSeats)}টি
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {specialMeta.specialInformation.map((info, i) => (
+                      <div key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-200">
+                        <CheckCircle2 className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                        <span className="leading-relaxed">{toEnDatesAndDigits(info)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. OLD NAMES & GEOGRAPHICAL NICKNAMES */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
                   <div className="flex items-center gap-2 text-amber-400 font-semibold mb-2">
                     <span className="text-base">📜</span>
-                    <h4>পূর্বনাম ও প্রাচীন পরিচয়</h4>
+                    <h4 className="text-sm font-bold">পূর্বনাম ও প্রাচীন পরিচয়</h4>
                   </div>
                   {district.oldNames && district.oldNames.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {district.oldNames.map((name, i) => (
-                        <span key={i} className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 text-xs font-medium">
-                          {name}
+                        <span key={i} className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 text-xs font-semibold">
+                          {toEnDigits(name)}
                         </span>
                       ))}
                     </div>
@@ -185,13 +242,13 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
                 <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
                   <div className="flex items-center gap-2 text-teal-400 font-semibold mb-2">
                     <span className="text-base">🏷️</span>
-                    <h4>ভৌগোলিক উপনাম</h4>
+                    <h4 className="text-sm font-bold">ভৌগোলিক উপনাম</h4>
                   </div>
                   {district.nicknames && district.nicknames.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {district.nicknames.map((nick, i) => (
-                        <span key={i} className="px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-300 border border-teal-500/30 text-xs font-medium">
-                          {nick}
+                        <span key={i} className="px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-300 border border-teal-500/30 text-xs font-semibold">
+                          {toEnDigits(nick)}
                         </span>
                       ))}
                     </div>
@@ -201,12 +258,12 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
                 </div>
               </div>
 
-              {/* Agriculture Impact */}
+              {/* 3. AGRICULTURE IMPACT & GI PRODUCTS */}
               <div className="bg-gradient-to-r from-emerald-950/40 to-slate-800/80 border border-emerald-500/30 rounded-xl p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-emerald-400 font-bold">
                     <span className="text-xl">🌾</span>
-                    <h3>কৃষি প্রভাব ও বিশেষ ফসল/খাদ্য</h3>
+                    <h3 className="text-sm sm:text-base font-bold">কৃষি প্রভাব, শীর্ষ ফসল ও খাদ্য</h3>
                   </div>
                   {district.agricultureImpact.isTopProducer && (
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-500 text-slate-950">
@@ -216,210 +273,79 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
                 </div>
                 <div className="bg-slate-900/80 rounded-lg p-3 border border-emerald-500/20 mb-2">
                   <p className="text-sm font-semibold text-emerald-300">
-                    প্রধান ফসল / খাদ্য: <span className="text-white">{district.agricultureImpact.topCrop}</span>
+                    প্রধান ফসল / খাদ্য: <span className="text-white">{toEnDigits(district.agricultureImpact.topCrop)}</span>
                   </p>
-                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                    {district.agricultureImpact.description}
+                  <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
+                    {toEnDigits(district.agricultureImpact.description)}
                   </p>
                 </div>
                 {district.agricultureImpact.giProduct && (
                   <div className="flex items-center gap-2 text-xs text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/20">
-                    <span>🎖️ <strong>জিআই (GI) পণ্য:</strong> {district.agricultureImpact.giProduct}</span>
+                    <span>🎖️ <strong>জিআই (GI) পণ্য:</strong> {toEnDigits(district.agricultureImpact.giProduct)}</span>
                   </div>
                 )}
               </div>
 
-              {/* Chhitmahal & Border */}
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-sky-400 font-semibold mb-2">
-                  <span className="text-base">🧩</span>
-                  <h4>ছিটমহল ও সীমান্ত তথ্য</h4>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-                  {district.chhitmahal.details}
-                </p>
-                {district.chhitmahal.hasCorridor && (
-                  <div className="mt-2 text-xs bg-sky-500/10 text-sky-300 border border-sky-500/30 px-3 py-1.5 rounded-lg font-medium">
-                    📍 তিন বিঘা করিডোর ও দহগ্রাম-আঙ্গরপোতার সরাসরি সংযোগ স্থল!
-                  </div>
-                )}
-              </div>
-
-              {/* July Movement */}
-              {district.julyMovement && (
-                <div className="bg-rose-950/30 border border-rose-500/30 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-rose-400 font-bold mb-1">
-                    <span>✊</span>
-                    <h4>জুলাই গণঅভ্যুত্থান ২০২৪</h4>
-                  </div>
-                  <p className="text-xs sm:text-sm text-slate-200">
-                    <strong>শহীদ:</strong> {district.julyMovement.martyrName}
-                  </p>
-                  <p className="text-xs text-slate-300 mt-1">
-                    {district.julyMovement.significance}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 2: LIBERATION WAR & BIR SRESHTHO */}
-          {activeTab === 'war' && (
-            <div className="space-y-4 animate-fadeIn">
-              {/* Sector details */}
-              <div className="bg-gradient-to-r from-rose-950/40 to-slate-800/80 border border-rose-500/30 rounded-xl p-4 sm:p-5">
+              {/* 4. MEGA INFRASTRUCTURE & INDUSTRY */}
+              <div className="bg-slate-800/50 border border-slate-700/70 rounded-xl p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-rose-400 font-bold">
-                    <Shield className="w-5 h-5" />
-                    <h3>১৯৭১ মুক্তিযুদ্ধ: সেক্টর ও সদর দফতর</h3>
-                  </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                    {district.liberationWar.sector}
-                  </span>
+                  <h3 className="text-sm sm:text-base font-bold text-cyan-400 flex items-center gap-2">
+                    <Factory className="w-4 h-4" />
+                    <span>মেগা অবকাঠামো ও শিল্প কারখানা ({toEnDigits(district.infrastructure.length)})</span>
+                  </h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
-                  <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-700/60">
-                    <span className="text-slate-400 block text-xs">সেক্টর কমান্ডার:</span>
-                    <strong className="text-slate-100">{district.liberationWar.sectorCommander}</strong>
-                  </div>
-                  <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-700/60">
-                    <span className="text-slate-400 block text-xs">সেক্টর সদর দফতর (HQ):</span>
-                    <strong className="text-slate-100">{district.liberationWar.sectorHQ}</strong>
-                  </div>
-                </div>
-              </div>
 
-              {/* Bir Sreshtho Details */}
-              {district.liberationWar.birSreshthoInfo && district.liberationWar.birSreshthoInfo.length > 0 && (
-                <div className="bg-amber-950/30 border border-amber-500/40 rounded-xl p-4 sm:p-5">
-                  <div className="flex items-center gap-2 text-amber-400 font-bold mb-3">
-                    <Award className="w-5 h-5" />
-                    <h3>বীরশ্রেষ্ঠ তথ্য (জন্ম / সমাধি)</h3>
-                  </div>
-                  <div className="space-y-2.5">
-                    {district.liberationWar.birSreshthoInfo.map((bs, i) => (
-                      <div key={i} className="bg-slate-900/90 p-3 rounded-lg border border-amber-500/20 flex items-start gap-3">
-                        <span className="text-xl">🎖️</span>
-                        <div>
+                {district.infrastructure.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {district.infrastructure.map((inf, i) => (
+                      <div key={i} className="bg-slate-900/80 border border-slate-700/70 rounded-xl p-3.5 hover:border-cyan-500/40 transition">
+                        <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-amber-300 text-sm">{bs.name}</h4>
-                            <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30 font-medium">
-                              {bs.role === 'birth' ? 'জন্মস্থান' : bs.role === 'burial' ? 'সমাধিস্থল' : 'জন্ম ও সমাধি'}
+                            <span className="text-base">
+                              {inf.type === 'railway' ? '🚆' :
+                               inf.type === 'bridge' ? '🌉' :
+                               inf.type === 'energy' ? '⚡' :
+                               inf.type === 'port' ? '⚓' :
+                               inf.type === 'airport' ? '✈️' :
+                               inf.type === 'industrial' ? '🏭' : '🏢'}
                             </span>
+                            <h4 className="font-bold text-white text-xs sm:text-sm">{toEnDigits(inf.title)}</h4>
                           </div>
-                          <p className="text-xs text-slate-300 mt-1 leading-relaxed">{bs.details}</p>
+                          <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                            {inf.type}
+                          </span>
                         </div>
+                        <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                          {toEnDigits(inf.details)}
+                        </p>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Historic Events / Genocides */}
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-                <h4 className="text-sm font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
-                  <span>⚔️</span> ঐতিহাসিক ঘটনাবলী ও অপারেশন
-                </h4>
-                <ul className="space-y-1.5 text-xs sm:text-sm text-slate-300">
-                  {district.liberationWar.events.map((ev, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-rose-400 mt-1">•</span>
-                      <span>{ev}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: INFRASTRUCTURE & INDUSTRY */}
-          {activeTab === 'infra' && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-cyan-400 flex items-center gap-2">
-                  <Factory className="w-4 h-4" />
-                  বৃহত্তম ও উল্লেখযোগ্য মেগা অবকাঠামো ({district.infrastructure.length})
-                </h3>
+                ) : (
+                  <p className="text-xs text-slate-400">এই জেলায় কোনো বৃহৎ জাতীয় অবকাঠামো তালিকাভুক্ত নেই।</p>
+                )}
               </div>
 
-              {district.infrastructure.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3">
-                  {district.infrastructure.map((inf, i) => (
-                    <div key={i} className="bg-slate-800/70 border border-slate-700/70 rounded-xl p-4 hover:border-cyan-500/50 transition">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">
-                            {inf.type === 'railway' ? '🚆' :
-                             inf.type === 'bridge' ? '🌉' :
-                             inf.type === 'energy' ? '⚡' :
-                             inf.type === 'port' ? '⚓' :
-                             inf.type === 'airport' ? '✈️' :
-                             inf.type === 'industrial' ? '🏭' : '🏢'}
-                          </span>
-                          <h4 className="font-bold text-white text-sm sm:text-base">{inf.title}</h4>
-                        </div>
-                        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-                          {inf.type}
-                        </span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-                        {inf.details}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400">এই জেলায় কোনো বৃহৎ জাতীয় অবকাঠামো তালিকাভুক্ত নেই।</p>
-              )}
-
-              {/* Education & Healthcare Institutes */}
-              {district.medicalAndEducation && (
-                <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold mb-2">
-                    <Stethoscope className="w-4 h-4" />
-                    <h4>স্বাস্থ্য ও শীর্ষ বিদ্যাপীঠ</h4>
-                  </div>
-                  <div className="space-y-2 text-xs sm:text-sm text-slate-300">
-                    {district.medicalAndEducation.medicalCollege && (
-                      <p>
-                        🏥 <strong>মেডিকেল কলেজ:</strong> {district.medicalAndEducation.medicalCollege}
-                        {district.medicalAndEducation.establishedYear && ` (প্রতিষ্ঠা: ${district.medicalAndEducation.establishedYear})`}
-                      </p>
-                    )}
-                    {district.medicalAndEducation.universityOrInstitute && (
-                      <p>
-                        🎓 <strong>বিশ্ববিদ্যালয় / গবেষণা প্রতিষ্ঠান:</strong> {district.medicalAndEducation.universityOrInstitute}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 4: HERITAGE, ARCHAEOLOGY & WETLANDS */}
-          {activeTab === 'heritage' && (
-            <div className="space-y-4 animate-fadeIn">
-              {/* Heritage sites */}
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+              {/* 5. HERITAGE & ARCHAEOLOGICAL MONUMENTS */}
+              <div className="bg-slate-800/50 border border-slate-700/70 rounded-xl p-4 sm:p-5">
                 <div className="flex items-center gap-2 text-amber-400 font-bold mb-3">
-                  <Landmark className="w-5 h-5" />
-                  <h3>ঐতিহ্য ও প্রত্নতাত্ত্বিক নিদর্শন ({district.heritageAndArchaeology.length})</h3>
+                  <Landmark className="w-4 h-4" />
+                  <h3 className="text-sm sm:text-base">ঐতিহাসিক স্থাপত্য ও প্রত্নতাত্ত্বিক নিদর্শন ({toEnDigits(district.heritageAndArchaeology.length)})</h3>
                 </div>
                 {district.heritageAndArchaeology.length > 0 ? (
-                  <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {district.heritageAndArchaeology.map((her, i) => (
-                      <div key={i} className="bg-slate-900/80 p-3 rounded-lg border border-slate-700/50">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-bold text-amber-300 text-sm">{her.name}</h4>
+                      <div key={i} className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/50">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-bold text-amber-300 text-xs sm:text-sm">{toEnDigits(her.name)}</h4>
                           {her.unescoYear && (
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                              ইউনেস্কো বিশ্ব ঐতিহ্য ({her.unescoYear})
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold">
+                              UNESCO {toEnDigits(her.unescoYear)}
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                          {her.periodOrSignificance}
+                          {toEnDigits(her.periodOrSignificance)}
                         </p>
                       </div>
                     ))}
@@ -429,35 +355,147 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
                 )}
               </div>
 
-              {/* Wetlands, Haor, Sundarban */}
+              {/* 6. WETLANDS, RIVERS, HAOR & FORESTS */}
               {district.wetlandsAndForests && district.wetlandsAndForests.length > 0 && (
-                <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
+                <div className="bg-slate-800/50 border border-slate-700/70 rounded-xl p-4 sm:p-5">
                   <div className="flex items-center gap-2 text-teal-400 font-bold mb-3">
-                    <Trees className="w-5 h-5" />
-                    <h3>হাওর, নদ-নদী ও বনভূমি</h3>
+                    <Trees className="w-4 h-4" />
+                    <h3 className="text-sm sm:text-base">হাওর, নদ-নদী ও বনভূমি</h3>
                   </div>
-                  <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {district.wetlandsAndForests.map((wet, i) => (
-                      <div key={i} className="bg-slate-900/80 p-3 rounded-lg border border-teal-500/20">
-                        <h4 className="font-bold text-teal-300 text-sm">{wet.name}</h4>
-                        <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                          {wet.significance}
+                      <div key={i} className="bg-slate-900/80 p-3.5 rounded-xl border border-teal-500/20">
+                        <h4 className="font-bold text-teal-300 text-xs sm:text-sm mb-1">{toEnDigits(wet.name)}</h4>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {toEnDigits(wet.significance)}
                         </p>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+
+              {/* 7. LIBERATION WAR 1971 & BIR SRESHTHO (WITHOUT SECTOR HQ) */}
+              <div className="bg-gradient-to-r from-rose-950/30 to-slate-900 border border-rose-500/30 rounded-xl p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 text-rose-400 font-bold">
+                    <Shield className="w-4 h-4" />
+                    <h3 className="text-sm sm:text-base">১৯৭১ মুক্তিযুদ্ধ: সেক্টর ও বীরশ্রেষ্ঠ</h3>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono">
+                    {toEnDigits(district.liberationWar.sector)}
+                  </span>
+                </div>
+
+                <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-700/60 mb-3">
+                  <span className="text-slate-400 block text-xs">সেক্টর কমান্ডার:</span>
+                  <strong className="text-slate-100 text-xs sm:text-sm">{toEnDigits(district.liberationWar.sectorCommander)}</strong>
+                </div>
+
+                {/* Bir Sreshtho Details */}
+                {district.liberationWar.birSreshthoInfo && district.liberationWar.birSreshthoInfo.length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    {district.liberationWar.birSreshthoInfo.map((bs, i) => (
+                      <div key={i} className="bg-slate-900/90 p-3 rounded-lg border border-amber-500/30 flex items-start gap-3">
+                        <span className="text-lg">🎖️</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-amber-300 text-xs sm:text-sm">{toEnDigits(bs.name)}</h4>
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30 font-semibold">
+                              {bs.role === 'birth' ? 'জন্মস্থান' : bs.role === 'burial' ? 'সমাধিস্থল' : 'জন্ম ও সমাধি'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 mt-1 leading-relaxed">{toEnDigits(bs.details)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Historical Events */}
+                {district.liberationWar.events && district.liberationWar.events.length > 0 && (
+                  <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-800">
+                    <h4 className="text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                      <span>⚔️</span> ঐতিহাসিক ঘটনাবলী ও অপারেশন:
+                    </h4>
+                    <ul className="space-y-1 text-xs text-slate-300">
+                      {district.liberationWar.events.map((ev, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-rose-400 mt-0.5">•</span>
+                          <span>{toEnDigits(ev)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* 8. CHHITMAHAL BOX (ONLY IF DISTRICT HAS CHHITMAHAL) */}
+              {hasChhitmahal && (
+                <div className="bg-slate-800/60 border border-rose-500/30 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-rose-400 font-semibold mb-2">
+                    <span className="text-base">🧩</span>
+                    <h4 className="text-sm font-bold">ছিটমহল ও সীমান্ত তথ্য ({toEnDigits(district.chhitmahal.count)}টি ছিটমহল)</h4>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                    {toEnDigits(district.chhitmahal.details)}
+                  </p>
+                  {district.chhitmahal.hasCorridor && (
+                    <div className="mt-2 text-xs bg-rose-500/10 text-rose-300 border border-rose-500/30 px-3 py-1.5 rounded-lg font-medium">
+                      📍 তিন বিঘা করিডোর ও দহগ্রাম-আঙ্গরপোতার সরাসরি সংযোগ স্থল!
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 9. HEALTHCARE & HIGHER EDUCATION */}
+              {district.medicalAndEducation && (
+                <div className="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold mb-2">
+                    <Stethoscope className="w-4 h-4" />
+                    <h4 className="text-sm font-bold">স্বাস্থ্য ও শীর্ষ বিদ্যাপীঠ</h4>
+                  </div>
+                  <div className="space-y-2 text-xs sm:text-sm text-slate-300">
+                    {district.medicalAndEducation.medicalCollege && (
+                      <p>
+                        🏥 <strong>মেডিকেল কলেজ:</strong> {toEnDigits(district.medicalAndEducation.medicalCollege)}
+                        {district.medicalAndEducation.establishedYear && ` (প্রতিষ্ঠা: ${toEnDigits(district.medicalAndEducation.establishedYear)})`}
+                      </p>
+                    )}
+                    {district.medicalAndEducation.universityOrInstitute && (
+                      <p>
+                        🎓 <strong>বিশ্ববিদ্যালয় / গবেষণা প্রতিষ্ঠান:</strong> {toEnDigits(district.medicalAndEducation.universityOrInstitute)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 10. JULY MOVEMENT (IF PRESENT) */}
+              {district.julyMovement && (
+                <div className="bg-rose-950/30 border border-rose-500/30 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-rose-400 font-bold mb-1">
+                    <span>✊</span>
+                    <h4 className="text-sm">জুলাই গণঅভ্যুত্থান ২০২৪</h4>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-200">
+                    <strong>শহীদ:</strong> {toEnDigits(district.julyMovement.martyrName)}
+                  </p>
+                  <p className="text-xs text-slate-300 mt-1">
+                    {toEnDigits(district.julyMovement.significance)}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* TAB 5: GENERAL KNOWLEDGE QUESTIONS */}
+          {/* TAB 2: BCS & MEDICAL QUESTIONS */}
           {activeTab === 'questions' && (
             <div className="space-y-4 animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <div className="flex items-center gap-2 text-purple-400 font-bold">
                   <BookOpen className="w-5 h-5" />
-                  <h3>সাধারণ জ্ঞান ও প্রতিযোগিতামূলক পরীক্ষার গুরুত্বপূর্ণ প্রশ্ন</h3>
+                  <h3 className="text-sm sm:text-base">বিসিএস ও মেডিকেল ভর্তি পরীক্ষার বিগত প্রশ্নাবলী</h3>
                 </div>
                 <span className="text-xs text-slate-400">
                   ক্লিক করে উত্তর ও ব্যাখ্যা দেখুন
@@ -472,11 +510,11 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
                       <div key={idx} className="bg-slate-800/80 border border-slate-700 rounded-xl p-4 space-y-3">
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-sm font-semibold text-white leading-snug">
-                            <span className="text-purple-400 mr-1.5 font-bold">প্রশ্ন {idx + 1}:</span>
-                            {q.question}
+                            <span className="text-purple-400 mr-1.5 font-bold">প্রশ্ন {toEnDigits(idx + 1)}:</span>
+                            {toEnDigits(q.question)}
                           </p>
-                          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/30 whitespace-nowrap">
-                            {q.examTag}
+                          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 whitespace-nowrap">
+                            {toEnDigits(q.examTag)}
                           </span>
                         </div>
 
@@ -494,7 +532,7 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
                               <span className="text-slate-400 mr-1.5 font-mono">
                                 {oIdx === 0 ? 'ক.' : oIdx === 1 ? 'খ.' : oIdx === 2 ? 'গ.' : 'ঘ.'}
                               </span>
-                              {opt}
+                              {toEnDigits(opt)}
                             </div>
                           ))}
                         </div>
@@ -515,10 +553,10 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
                           <div className="mt-2 bg-emerald-950/30 border border-emerald-500/30 rounded-lg p-3 text-xs animate-fadeIn">
                             <p className="font-bold text-emerald-300 flex items-center gap-1">
                               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                              সঠিক উত্তর: {q.options[q.answerIndex]}
+                              সঠিক উত্তর: {toEnDigits(q.options[q.answerIndex])}
                             </p>
                             <p className="text-slate-300 mt-1 leading-relaxed">
-                              {q.explanation}
+                              {toEnDigits(q.explanation)}
                             </p>
                           </div>
                         )}
@@ -536,10 +574,10 @@ export const DistrictDashboardModal: React.FC<DistrictDashboardModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        <div className="p-3.5 sm:p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>মানচিত্রে যেকোনো জেলায় ক্লিক করে বিস্তারিত ড্যাশবোর্ড দেখুন</span>
+            <span>{district.nameBn} জেলার সাধারণ জ্ঞান ও পরীক্ষা প্রস্তুতি তথ্য</span>
           </div>
           <button
             onClick={onClose}

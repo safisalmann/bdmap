@@ -7,9 +7,10 @@ import { SPECIAL_LANDMARKS } from '../data/specialLandmarks';
 import { DIVISIONS } from '../data/divisions';
 import { MAJOR_RIVERS, riverToPOI } from '../data/riverData';
 import simplifiedGeoJson from '../data/bangladesh-districts-simplified.json';
+import { DISTRICT_SPECIAL_FACTS } from '../data/districtSpecialFacts';
 import { 
   Eye, EyeOff, Waves, MapPin, Sparkles, 
-  Building, Mountain, Zap, Factory 
+  Building, Mountain, Zap, Factory, Building2
 } from 'lucide-react';
 
 interface MapComponentProps {
@@ -38,7 +39,8 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   const [hoveredDistrict, setHoveredDistrict] = useState<DistrictGK | null>(null);
   const [showDistrictNames, setShowDistrictNames] = useState<boolean>(true);
   const [showRivers, setShowRivers] = useState<boolean>(true);
-  const [showSpots, setShowSpots] = useState<boolean>(true);
+  const [showSpots, setShowSpots] = useState<boolean>(false);
+  const [showBridges, setShowBridges] = useState<boolean>(false);
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -323,10 +325,16 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     const markersGroup = markersLayerRef.current;
     markersGroup.clearLayers();
 
-    if (!showSpots) return;
+    if (!showSpots && !showBridges) return;
 
-    // Filter spots by search query
+    // Filter spots by category toggles and search query
     const filteredSpots = SPECIAL_LANDMARKS.filter(spot => {
+      if (spot.category === 'bridge') {
+        if (!showBridges) return false;
+      } else {
+        if (!showSpots) return false;
+      }
+
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       return (
@@ -473,7 +481,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
       markersGroup.addLayer(marker);
     });
-  }, [showSpots, searchQuery]);
+  }, [showSpots, showBridges, searchQuery]);
 
   return (
     <div className="relative w-full h-[calc(100vh-65px)] bg-slate-950 overflow-hidden">
@@ -481,7 +489,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       <div ref={mapContainerRef} className="w-full h-full z-10" />
 
       {/* Map Control Switches (Top Right Floating) */}
-      <div className="absolute top-3 right-3 z-20 flex flex-col sm:flex-row items-end sm:items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-1.5 shadow-xl text-xs">
+      <div className="absolute top-3 right-3 z-20 flex flex-wrap items-center justify-end gap-1.5 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-1.5 shadow-xl text-xs">
         <button
           onClick={() => setShowDistrictNames(!showDistrictNames)}
           className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1.5 font-medium ${
@@ -509,16 +517,29 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         </button>
 
         <button
+          onClick={() => setShowBridges(!showBridges)}
+          className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1.5 font-medium ${
+            showBridges 
+              ? 'bg-cyan-600 text-white font-bold shadow-sm' 
+              : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+          }`}
+          title="গুরুত্বপূর্ণ সেতু টগল করুন (ডিফল্ট: অফ)"
+        >
+          <span>🌉</span>
+          <span>সেতু ({showBridges ? 'অন' : 'অফ'})</span>
+        </button>
+
+        <button
           onClick={() => setShowSpots(!showSpots)}
           className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1.5 font-medium ${
             showSpots 
               ? 'bg-amber-600 text-white font-bold shadow-sm' 
               : 'bg-slate-800 text-slate-400 hover:text-slate-200'
           }`}
-          title="গুরুত্বপূর্ণ স্পট ও সেতু টগল করুন"
+          title="গুরুত্বপূর্ণ স্পট ও ল্যান্ডমার্ক টগল করুন (ডিফল্ট: অফ)"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>স্পট ও সেতু ({showSpots ? 'অন' : 'অফ'})</span>
+          <span>স্পট ({showSpots ? 'অন' : 'অফ'})</span>
         </button>
       </div>
 
@@ -551,14 +572,37 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             </span>
           </div>
 
-          {/* Quick Stats Banner */}
-          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-            <span>📐 আয়তন: <strong className="text-slate-200">{hoveredDistrict.areaKm2.toLocaleString('bn-BD')}</strong> বর্গ কিমি</span>
-            {hoveredDistrict.chhitmahal && hoveredDistrict.chhitmahal.count > 0 && (
-              <span className="text-rose-400 font-bold">🧩 {hoveredDistrict.chhitmahal.count}টি ছিটমহল</span>
-            )}
-            <span className="text-emerald-400 font-bold">সেক্টর: {hoveredDistrict.liberationWar.sector}</span>
-          </div>
+          {/* Quick Stats & Special Highlights Banner (No area, no axis position) */}
+          {(() => {
+            const specialMeta = DISTRICT_SPECIAL_FACTS[hoveredDistrict.id] || DISTRICT_SPECIAL_FACTS[hoveredDistrict.adm2En.toLowerCase()];
+            const hasChhitmahal = hoveredDistrict.chhitmahal && hoveredDistrict.chhitmahal.count > 0;
+            const topHighlight = specialMeta?.specialInformation?.[0];
+
+            return (
+              <div className="mt-2 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-mono">
+                  {specialMeta?.parliamentSeats ? (
+                    <span className="text-amber-300 font-bold flex items-center gap-1">
+                      <Building2 className="w-3 h-3 text-amber-400" />
+                      সংসদীয় আসন: {specialMeta.parliamentSeats}টি
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">সাধারণ জ্ঞান প্রোফাইল</span>
+                  )}
+                  {hasChhitmahal && (
+                    <span className="text-rose-400 font-bold">🧩 {hoveredDistrict.chhitmahal.count}টি ছিটমহল</span>
+                  )}
+                  <span className="text-emerald-400 font-bold">সেক্টর: {hoveredDistrict.liberationWar.sector}</span>
+                </div>
+
+                {topHighlight && (
+                  <div className="text-[11px] bg-amber-500/10 text-amber-200 border border-amber-500/25 px-2 py-1 rounded-md font-medium line-clamp-1">
+                    ★ {topHighlight}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Old Names & Nicknames */}
           {(hoveredDistrict.oldNames.length > 0 || hoveredDistrict.nicknames.length > 0) && (

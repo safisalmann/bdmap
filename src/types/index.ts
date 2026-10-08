@@ -77,6 +77,8 @@ export interface DistrictGK {
     martyrName?: string;
     significance?: string;
   };
+  specialInformation?: string[];
+  parliamentSeats?: number;
   bcsQuestions: BCSQuestion[];
 }
 

@@ -3,6 +3,16 @@ import { X, MapPin, ExternalLink, Sparkles, Navigation, Layers, CheckCircle2, Bo
 import { LandmarkPOI, DistrictGK } from '../types';
 import { getDistrictByAdm2 } from '../data/districtsData';
 
+function toEnDigits(val: string | number | undefined | null): string {
+  if (val === undefined || val === null) return '';
+  const str = String(val);
+  const bnToEn: Record<string, string> = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+  };
+  return str.replace(/[০-৯]/g, (char) => bnToEn[char] || char);
+}
+
 interface SpotDetailModalProps {
   spot: LandmarkPOI | null;
   onClose: () => void;
@@ -137,15 +147,15 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                   </span>
                   {spot.spotNumber && (
                     <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-black/40 text-amber-300 border border-amber-400/30">
-                      #{spot.spotNumber}
+                      #{toEnDigits(spot.spotNumber)}
                     </span>
                   )}
                 </div>
                 <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
-                  {spot.nameBn}
+                  {toEnDigits(spot.nameBn)}
                 </h3>
                 <p className="text-xs text-white/80 font-medium mt-0.5">
-                  {spot.nameEn}
+                  {toEnDigits(spot.nameEn)}
                 </p>
               </div>
             </div>
@@ -163,7 +173,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           {spot.badgeBn && (
             <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/35 backdrop-blur-sm border border-white/20 text-xs font-semibold text-amber-200">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>{spot.badgeBn}</span>
+              <span>{toEnDigits(spot.badgeBn)}</span>
             </div>
           )}
         </div>
@@ -173,7 +183,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           <div className="flex items-center gap-1.5 text-slate-300">
             <MapPin className="w-4 h-4 text-emerald-400 flex-shrink-0" />
             <span>অবস্থান:</span>
-            <strong className="text-white font-bold">{spot.districtBn}</strong>
+            <strong className="text-white font-bold">{toEnDigits(spot.districtBn)}</strong>
             {parentDistrict && (
               <span className="text-slate-400">({parentDistrict.divisionBn} বিভাগ)</span>
             )}
@@ -191,7 +201,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
               <span>📖</span> বিস্তারিত তথ্য
             </h4>
             <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/60 text-sm sm:text-base leading-relaxed text-slate-200">
-              {spot.description}
+              {toEnDigits(spot.description)}
             </div>
           </div>
 
@@ -205,7 +215,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                 {spot.keyFacts.map((fact, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                    <span>{fact}</span>
+                    <span>{toEnDigits(fact)}</span>
                   </div>
                 ))}
               </div>
@@ -219,18 +229,18 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                 <span className="text-xs font-bold text-purple-300 flex items-center gap-1">
                   <BookOpen className="w-3.5 h-3.5" /> সাধারণ জ্ঞান প্রশ্ন
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-200 border border-purple-500/30 font-semibold">
-                  {spot.bcsQuestion.examTag}
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-200 border border-purple-500/30 font-semibold font-mono">
+                  {toEnDigits(spot.bcsQuestion.examTag)}
                 </span>
               </div>
               <p className="font-semibold text-sm text-white mb-2">
-                {spot.bcsQuestion.question}
+                {toEnDigits(spot.bcsQuestion.question)}
               </p>
               <div className="text-xs text-emerald-300 font-bold bg-emerald-950/40 border border-emerald-500/30 rounded-lg p-2.5">
-                সঠিক উত্তর: {spot.bcsQuestion.options[spot.bcsQuestion.answerIndex]}
+                সঠিক উত্তর: {toEnDigits(spot.bcsQuestion.options[spot.bcsQuestion.answerIndex])}
                 {spot.bcsQuestion.explanation && (
                   <div className="font-normal text-slate-300 mt-1 text-[11px]">
-                    ব্যাখ্যা: {spot.bcsQuestion.explanation}
+                    ব্যাখ্যা: {toEnDigits(spot.bcsQuestion.explanation)}
                   </div>
                 )}
               </div>
